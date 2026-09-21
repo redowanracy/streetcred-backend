@@ -1,0 +1,54 @@
+{
+  "name": "streetcred-server",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Server-authoritative backend for Street Cred (Trapcity): accounts, profiles, wallet, missions, garage, inventory and shop.",
+  "main": "dist/index.js",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "setup:env": "node scripts/generate-env.js",
+    "db:up": "docker compose up -d postgres",
+    "db:down": "docker compose stop postgres",
+    "migrate": "tsx src/db/migrate-cli.ts",
+    "seed:dev": "tsx scripts/seed-dev.ts",
+    "seed:streetcred": "tsx scripts/seed-streetcred.ts",
+    "admin:promote": "tsx scripts/promote-admin.ts",
+    "docs:examples": "tsx scripts/capture-examples.ts",
+    "docs:postman": "tsx scripts/generate-postman.ts",
+    "docs": "npm run docs:examples && npm run docs:postman",
+    "dev": "tsx watch src/index.ts",
+    "build": "tsc -p tsconfig.build.json",
+    "start": "node dist/index.js",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:contract": "vitest run --config vitest.contract.config.mts",
+    "test:smoke:local": "tsx scripts/smoke-local.ts"
+  },
+  "dependencies": {
+    "cors": "^2.8.6",
+    "dotenv": "^18.0.1",
+    "express": "^5.2.1",
+    "express-rate-limit": "^8.7.0",
+    "helmet": "^8.3.0",
+    "jsonwebtoken": "^9.0.3",
+    "pg": "^8.23.0",
+    "pino": "^10.3.1",
+    "pino-http": "^11.0.0",
+    "zod": "^4.6.5"
+  },
+  "devDependencies": {
+    "@types/cors": "^2.8.19",
+    "@types/express": "^5.0.6",
+    "@types/jsonwebtoken": "^9.0.10",
+    "@types/node": "^26.6.2",
+    "@types/pg": "^8.23.1",
+    "@types/supertest": "^7.2.1",
+    "supertest": "^7.2.2",
+    "tsx": "^4.23.13",
+    "typescript": "^7.0.2",
+    "vitest": "^5.0.1",
+    "yaml": "^2.9.1"
+  }
+}

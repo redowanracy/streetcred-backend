@@ -1,0 +1,1379 @@
+openapi: 3.1.0
+info:
+  title: Street Cred API
+  version: "1.0.0"
+  description: |
+    Server-authoritative backend for Street Cred (Trapcity).
+
+    **Auth**: send `Authorization: Bearer <accessToken>`. Access tokens last 15 minutes; on
+    `401 INVALID_TOKEN` call `/auth/refresh` with the stored refresh token and retry once.
+    Refresh tokens rotate: always store the newest one.
+
+    **Idempotency**: for actions that spend or grant currency send `Idempotency-Key: <GUID per user action>`.
+    A retry with the same key returns the original response instead of charging twice.
+
+    **Rate limits**: any endpoint can answer `429 RATE_LIMITED`; sign-in and sign-up are limited more tightly.
+
+    **Server is authoritative**: apply the `profile` object returned by every mutating call instead of
+    changing balances locally.
+servers:
+  - url: http://localhost:3000/api/v1
+    description: Local development
+  - url: https://staging.example.invalid/api/v1
+    description: Staging (to be provisioned)
+
+tags:
+  - name: Health
+  - name: Auth
+  - name: Player
+  - name: Config & catalogs
+  - name: Missions
+  - name: Garage
+  - name: Inventory & shop
+  - name: Economy
+  - name: Admin
+
+security:
+  - bearerAuth: []
+
+paths:
+  /health:
+    get:
+      tags: [Health]
+      security: []
+      summary: Liveness probe
+      description: "Cheap liveness check for load balancers. Does not touch the database."
+      responses:
+        "200": { $ref: "#/components/responses/Ok" }
+  /health/ready:
+    get:
+      tags: [Health]
+      security: []
+      summary: Readiness probe (checks the database)
+      description: "Readiness check: runs a query, so it fails while the database is unreachable. Point uptime alerts here."
+      responses:
+        "200": { $ref: "#/components/responses/Ok" }
+        "503": { $ref: "#/components/responses/Error" }
+
+  /auth/guest:
+    post:
+      tags: [Auth]
+      security: []
+      summary: Create a guest account
+      description: Creates a **new** guest every call. Store the refresh token durably; it is the guest's only credential.
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                displayName: { $ref: "#/components/schemas/DisplayName" }
+      responses:
+        "201": { $ref: "#/components/responses/Session" }
+  /auth/signup:
+    post:
+      tags: [Auth]
+      security: []
+      summary: Create an email + password account
+      description: "Creates a fresh account with an empty profile. To keep a guest's progress instead, use /auth/link/email while signed in as that guest."
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password]
+              properties:
+                email: { type: string, format: email }
+                password: { type: string, minLength: 8, maxLength: 128 }
+                displayName: { $ref: "#/components/schemas/DisplayName" }
+      responses:
+        "201": { $ref: "#/components/responses/Session" }
+        "400": { $ref: "#/components/responses/Error" }
+        "409": { $ref: "#/components/responses/Error", description: "EMAIL_TAKEN" }
+  /auth/login:
+    post:
+      tags: [Auth]
+      security: []
+      summary: Sign in with email and password
+      description: "Returns a new session. The same generic error is returned for a wrong password and an unknown email, so the endpoint cannot be used to discover registered addresses."
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password]
+              properties:
+                email: { type: string, format: email }
+                password: { type: string }
+      responses:
+        "200": { $ref: "#/components/responses/Session" }
+        "401": { $ref: "#/components/responses/Error", description: "INVALID_CREDENTIALS" }
+        "403": { $ref: "#/components/responses/Error", description: "ACCOUNT_BANNED" }
+  /auth/refresh:
+    post:
+      tags: [Auth]
+      security: []
+      summary: Exchange a refresh token for a new session
+      description: Returns a new refresh token; the old one stops working after a 60 second grace period.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/RefreshBody" }
+      responses:
+        "200": { $ref: "#/components/responses/Session" }
+        "401": { $ref: "#/components/responses/Error", description: "INVALID_REFRESH_TOKEN / REFRESH_TOKEN_EXPIRED / REFRESH_TOKEN_REUSED" }
+  /auth/logout:
+    post:
+      tags: [Auth]
+      security: []
+      summary: Revoke one refresh token (this device)
+      description: "Revokes only the refresh token you send, so other devices stay signed in. The access token remains valid until it expires (15 minutes)."
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/RefreshBody" }
+      responses:
+        "204": { description: Signed out }
+  /auth/logout-all:
+    post:
+      tags: [Auth]
+      summary: Revoke every refresh token for the signed-in account
+      description: "Use after \"sign out everywhere\" or a suspected account compromise. Access tokens still work until they expire (15 minutes)."
+      responses:
+        "204": { description: Signed out everywhere }
+        "401": { $ref: "#/components/responses/Error" }
+  /auth/link/email:
+    post:
+      tags: [Auth]
+      summary: Turn the signed-in guest into an email account
+      description: Keeps the same user id and all progress.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password]
+              properties:
+                email: { type: string, format: email }
+                password: { type: string, minLength: 8 }
+                displayName: { $ref: "#/components/schemas/DisplayName" }
+      responses:
+        "200":
+          description: Linked
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  user: { $ref: "#/components/schemas/User" }
+        "409": { $ref: "#/components/responses/Error", description: "EMAIL_TAKEN / ALREADY_REGISTERED" }
+  /auth/password/change:
+    post:
+      tags: [Auth]
+      summary: Change password (signs out other devices)
+      description: "Requires the current password. Every other device is signed out; this device receives a new session in the response."
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [currentPassword, newPassword]
+              properties:
+                currentPassword: { type: string }
+                newPassword: { type: string, minLength: 8 }
+      responses:
+        "200": { $ref: "#/components/responses/Session" }
+        "401": { $ref: "#/components/responses/Error" }
+  /auth/password/forgot:
+    post:
+      tags: [Auth]
+      security: []
+      summary: Request a password reset link
+      description: Always returns 202 so it cannot be used to discover which emails are registered.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email]
+              properties:
+                email: { type: string, format: email }
+      responses:
+        "202": { $ref: "#/components/responses/Ok" }
+  /auth/password/reset:
+    post:
+      tags: [Auth]
+      security: []
+      summary: Set a new password with a reset token
+      description: "Completes the flow started by /auth/password/forgot. The token can be used once, expires after 30 minutes, and signs out all devices."
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [token, newPassword]
+              properties:
+                token: { type: string }
+                newPassword: { type: string, minLength: 8 }
+      responses:
+        "204": { description: Password changed }
+        "400": { $ref: "#/components/responses/Error", description: "INVALID_RESET_TOKEN" }
+  /auth/google:
+    post:
+      tags: [Auth]
+      security: []
+      summary: "Sign in with Google (not enabled yet: 501)"
+      description: "Planned Google sign-in. The request shape is final, so the client can be written now; the server verifies the token and returns a session once the verifier is implemented."
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [idToken]
+              properties: { idToken: { type: string } }
+      responses:
+        "200": { $ref: "#/components/responses/Session" }
+        "501": { $ref: "#/components/responses/Error", description: "NOT_IMPLEMENTED until token verification is added" }
+  /auth/apple:
+    post:
+      tags: [Auth]
+      security: []
+      summary: "Sign in with Apple (not enabled yet: 501)"
+      description: "Planned Apple sign-in. The request shape is final; see /auth/google for the same note."
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [identityToken]
+              properties:
+                identityToken: { type: string }
+                nonce: { type: string }
+      responses:
+        "200": { $ref: "#/components/responses/Session" }
+        "501": { $ref: "#/components/responses/Error" }
+  /auth/link/google:
+    post:
+      tags: [Auth]
+      summary: "Link Google to the signed-in account (not enabled yet: 501)"
+      description: "Planned: attach a Google identity to the signed-in account so the player can also sign in that way."
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [idToken]
+              properties: { idToken: { type: string } }
+      responses:
+        "200": { description: Linked }
+        "501": { $ref: "#/components/responses/Error" }
+  /auth/link/apple:
+    post:
+      tags: [Auth]
+      summary: "Link Apple to the signed-in account (not enabled yet: 501)"
+      description: "Planned: attach an Apple identity to the signed-in account."
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [identityToken]
+              properties:
+                identityToken: { type: string }
+                nonce: { type: string }
+      responses:
+        "200": { description: Linked }
+        "501": { $ref: "#/components/responses/Error" }
+
+  /me:
+    get:
+      tags: [Player]
+      summary: Everything the client needs after launch or sign-in
+      description: "Call once after launch and after every sign-in. The single source of truth for balances, level, stamina, owned vehicles and items, and any mission still running."
+      responses:
+        "200":
+          description: Player state
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  user: { $ref: "#/components/schemas/User" }
+                  profile: { $ref: "#/components/schemas/Profile" }
+                  vehicles: { type: array, items: { $ref: "#/components/schemas/OwnedVehicle" } }
+                  inventory: { type: array, items: { $ref: "#/components/schemas/InventoryItem" } }
+                  activeAttempt:
+                    oneOf:
+                      - { $ref: "#/components/schemas/Attempt" }
+                      - { type: "null" }
+        "401": { $ref: "#/components/responses/Error" }
+    patch:
+      tags: [Player]
+      summary: Rename the player
+      description: "Player renames themselves. Names are not unique."
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [displayName]
+              properties:
+                displayName: { $ref: "#/components/schemas/DisplayName" }
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties: { user: { $ref: "#/components/schemas/User" } }
+        "400": { $ref: "#/components/responses/Error" }
+  /me/transactions:
+    get:
+      tags: [Player]
+      summary: Wallet ledger, newest first
+      description: "Every cash and gem change with the balance after it. Use for an in-game history screen or player support."
+      parameters:
+        - { name: limit, in: query, schema: { type: integer, minimum: 1, maximum: 100, default: 50 } }
+        - { name: before, in: query, description: ISO timestamp for paging, schema: { type: string, format: date-time } }
+      responses:
+        "200":
+          description: Ledger page
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  transactions: { type: array, items: { $ref: "#/components/schemas/Transaction" } }
+  /me/delete:
+    post:
+      tags: [Player]
+      summary: Permanently delete the account and all its data
+      description: "Required by Google Play and the App Store. Deletes the account, profile, garage, inventory and mission history; it cannot be undone."
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [confirm]
+              properties:
+                confirm: { type: string, enum: ["DELETE"] }
+                password: { type: string, description: Required for accounts that have a password }
+      responses:
+        "204": { description: Deleted }
+        "401": { $ref: "#/components/responses/Error" }
+
+  /config:
+    get:
+      tags: [Config & catalogs]
+      security: []
+      summary: Gameplay tunables (XP curve, stamina regen, prices, limits)
+      description: "Gameplay numbers the client should not hardcode: XP curve, stamina regeneration, ad rewards, limits. Fetch at launch so balance changes need no app update."
+      responses:
+        "200":
+          description: Config
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  config: { type: object, additionalProperties: true }
+  /catalog/vehicles:
+    get:
+      tags: [Config & catalogs]
+      security: []
+      summary: Buyable vehicles
+      description: "Everything buyable in the garage, with prices and upgrade costs. Ids match the Unity vehicle ids."
+      responses:
+        "200":
+          description: Vehicles
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  vehicles: { type: array, items: { $ref: "#/components/schemas/CatalogVehicle" } }
+  /catalog/items:
+    get:
+      tags: [Config & catalogs]
+      security: []
+      summary: All items (weapons, outfits, vehicle parts, consumables)
+      description: "Every item in the game, including ones the player does not own. Use for shop and inventory UI."
+      responses:
+        "200":
+          description: Items
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items: { type: array, items: { $ref: "#/components/schemas/CatalogItem" } }
+
+  /missions/nearby:
+    get:
+      tags: [Missions]
+      summary: Missions within a radius of a position
+      description: "Feeds the map. Returns missions around a position with the distance in metres and, per mission, whether this player can start it right now."
+      parameters:
+        - { name: lat, in: query, required: true, schema: { type: number, minimum: -90, maximum: 90 } }
+        - { name: lng, in: query, required: true, schema: { type: number, minimum: -180, maximum: 180 } }
+        - { name: radius, in: query, description: Metres, capped by config (default 10000), schema: { type: number, default: 2000 } }
+      responses:
+        "200":
+          description: Missions sorted by distance
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  radiusM: { type: number }
+                  missions: { type: array, items: { $ref: "#/components/schemas/NearbyMission" } }
+        "400": { $ref: "#/components/responses/Error" }
+  /missions/history:
+    get:
+      tags: [Missions]
+      summary: Recent attempts by this player
+      description: "Recent attempts with their outcome. Use for an activity feed."
+      parameters:
+        - { name: limit, in: query, schema: { type: integer, minimum: 1, maximum: 100, default: 20 } }
+      responses:
+        "200":
+          description: Attempts
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  attempts: { type: array, items: { $ref: "#/components/schemas/Attempt" } }
+  /missions/attempts/active:
+    get:
+      tags: [Missions]
+      summary: The attempt still running, if any (use on app resume)
+      description: "Call when the app resumes or restarts: if the player closed the game mid-mission, this returns that attempt so you can continue or abandon it."
+      responses:
+        "200":
+          description: Active attempt or null
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  attempt:
+                    oneOf:
+                      - { $ref: "#/components/schemas/Attempt" }
+                      - { type: "null" }
+  /missions/{id}:
+    get:
+      tags: [Missions]
+      summary: One mission
+      description: "Details for one mission, e.g. when opening a mission card from a push notification or a saved id."
+      parameters: [{ $ref: "#/components/parameters/UuidId" }]
+      responses:
+        "200":
+          description: Mission
+          content:
+            application/json:
+              schema:
+                type: object
+                properties: { mission: { $ref: "#/components/schemas/Mission" } }
+        "404": { $ref: "#/components/responses/Error" }
+  /missions/{id}/attempts:
+    post:
+      tags: [Missions]
+      summary: Start an attempt (charges stamina, fixes the rewards)
+      description: "Call when the player confirms \"Start mission\". The server checks distance, level, cooldown and stamina, charges the stamina, and locks in the rewards. Keep the returned attempt id for the rest of the mission."
+      parameters:
+        - { $ref: "#/components/parameters/UuidId" }
+        - { $ref: "#/components/parameters/IdempotencyKey" }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/Position" }
+      responses:
+        "201": { $ref: "#/components/responses/AttemptStarted" }
+        "403": { $ref: "#/components/responses/Error", description: "TOO_FAR_FROM_MISSION / LEVEL_TOO_LOW" }
+        "409": { $ref: "#/components/responses/Error", description: "ATTEMPT_IN_PROGRESS / NOT_ENOUGH_STAMINA / MISSION_ON_COOLDOWN / MISSION_NOT_REPEATABLE" }
+  /missions/attempts/{id}/complete:
+    post:
+      tags: [Missions]
+      summary: Finish successfully and receive the reward (once)
+      description: "Calling it again returns the same result with `alreadyCompleted: true` and pays nothing extra."
+      parameters: [{ $ref: "#/components/parameters/UuidId" }]
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                clientReport:
+                  type: object
+                  additionalProperties: true
+                  description: Optional telemetry (max 4 KB) stored for review; never used to decide rewards.
+      responses:
+        "404": { $ref: "#/components/responses/Error", description: "No attempt with this id for this player" }
+        "200":
+          description: Completed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  attempt: { $ref: "#/components/schemas/Attempt" }
+                  alreadyCompleted: { type: boolean }
+                  profile: { $ref: "#/components/schemas/Profile" }
+        "409": { $ref: "#/components/responses/Error", description: "ATTEMPT_EXPIRED / ATTEMPT_NOT_ACTIVE" }
+        "422": { $ref: "#/components/responses/Error", description: "COMPLETION_TOO_FAST" }
+  /missions/attempts/{id}/fail:
+    post:
+      tags: [Missions]
+      summary: Mark the attempt failed (time out, player died)
+      description: "The player ran out of time or lost. Stamina is not returned, but a free retry becomes available for a short while."
+      parameters: [{ $ref: "#/components/parameters/UuidId" }]
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties: { clientReport: { type: object, additionalProperties: true } }
+      responses:
+        "404": { $ref: "#/components/responses/Error", description: "No attempt with this id for this player" }
+        "200": { $ref: "#/components/responses/AttemptEnded" }
+        "409": { $ref: "#/components/responses/Error" }
+  /missions/attempts/{id}/abandon:
+    post:
+      tags: [Missions]
+      summary: Player quit the mission (no reward, no stamina refund)
+      description: "The player chose to quit. Treated like a failure: no reward and no stamina refund, but it frees the player to start another mission."
+      parameters: [{ $ref: "#/components/parameters/UuidId" }]
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties: { clientReport: { type: object, additionalProperties: true } }
+      responses:
+        "404": { $ref: "#/components/responses/Error", description: "No attempt with this id for this player" }
+        "200": { $ref: "#/components/responses/AttemptEnded" }
+        "409": { $ref: "#/components/responses/Error" }
+  /missions/attempts/{id}/retry:
+    post:
+      tags: [Missions]
+      summary: Free restart after a failed or timed-out attempt
+      description: No stamina is charged. Allowed once per failed attempt, within 10 minutes (both configurable).
+      parameters:
+        - { $ref: "#/components/parameters/UuidId" }
+        - { $ref: "#/components/parameters/IdempotencyKey" }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/Position" }
+      responses:
+        "404": { $ref: "#/components/responses/Error", description: "No attempt with this id for this player" }
+        "201": { $ref: "#/components/responses/AttemptStarted" }
+        "409": { $ref: "#/components/responses/Error", description: "NOT_RETRYABLE / ALREADY_RETRIED / ATTEMPT_IN_PROGRESS" }
+
+  /garage:
+    get:
+      tags: [Garage]
+      summary: Vehicles this player owns
+      description: "The player's own vehicles with upgrade levels, the cost of the next upgrade and their paint and underglow."
+      responses:
+        "200":
+          description: Garage
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  vehicles: { type: array, items: { $ref: "#/components/schemas/OwnedVehicle" } }
+  /garage/{id}/purchase:
+    post:
+      tags: [Garage]
+      summary: Buy a vehicle
+      description: "Buy a vehicle from the catalog. The price in cash and gems is taken together; the server refuses if either balance is short."
+      parameters:
+        - { $ref: "#/components/parameters/CatalogId" }
+        - { $ref: "#/components/parameters/IdempotencyKey" }
+      responses:
+        "201": { $ref: "#/components/responses/VehicleChanged" }
+        "403": { $ref: "#/components/responses/Error", description: "LEVEL_TOO_LOW" }
+        "409": { $ref: "#/components/responses/Error", description: "ALREADY_OWNED / INSUFFICIENT_FUNDS" }
+  /garage/{id}/equip:
+    post:
+      tags: [Garage]
+      summary: Equip an owned vehicle
+      description: "Set the active vehicle. Must be a vehicle the player owns."
+      parameters: [{ $ref: "#/components/parameters/CatalogId" }]
+      responses:
+        "200": { $ref: "#/components/responses/VehicleChanged" }
+        "404": { $ref: "#/components/responses/Error", description: "VEHICLE_NOT_OWNED" }
+  /garage/{id}/upgrade:
+    post:
+      tags: [Garage]
+      summary: Upgrade one stat by one level
+      description: "Cost = upgradeBaseCostCash × (fromLevel + 1). `fromLevel` must match the current level, which makes retries safe."
+      parameters:
+        - { $ref: "#/components/parameters/CatalogId" }
+        - { $ref: "#/components/parameters/IdempotencyKey" }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [stat, fromLevel]
+              properties:
+                stat: { type: string, enum: [speed, acceleration, handling] }
+                fromLevel: { type: integer, minimum: 0 }
+      responses:
+        "200": { $ref: "#/components/responses/VehicleChanged" }
+        "409": { $ref: "#/components/responses/Error", description: "UPGRADE_LEVEL_MISMATCH / MAX_LEVEL_REACHED / INSUFFICIENT_FUNDS" }
+  /garage/{id}/customization:
+    patch:
+      tags: [Garage]
+      summary: Paint and underglow
+      description: "Save paint and underglow. Send only what changed; anything you leave out keeps its current value."
+      parameters:
+        - { $ref: "#/components/parameters/CatalogId" }
+        - { $ref: "#/components/parameters/IdempotencyKey" }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              minProperties: 1
+              properties:
+                hasCustomPaint: { type: boolean }
+                paintColor: { $ref: "#/components/schemas/Color" }
+                hasCustomUnderglow: { type: boolean }
+                underglowEnabled: { type: boolean }
+                underglowColor: { $ref: "#/components/schemas/Color" }
+      responses:
+        "200": { $ref: "#/components/responses/VehicleChanged" }
+        "400": { $ref: "#/components/responses/Error" }
+
+  /inventory:
+    get:
+      tags: [Inventory & shop]
+      summary: Items this player owns
+      description: "Items the player owns, with quantities."
+      responses:
+        "200":
+          description: Inventory
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items: { type: array, items: { $ref: "#/components/schemas/InventoryItem" } }
+  /inventory/{id}/equip:
+    post:
+      tags: [Inventory & shop]
+      summary: Equip an owned outfit
+      description: "Wear an owned outfit. The result is reflected in `profile.equippedOutfitId`."
+      parameters: [{ $ref: "#/components/parameters/CatalogId" }]
+      responses:
+        "200":
+          description: Equipped
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  item: { $ref: "#/components/schemas/InventoryItem" }
+                  profile: { $ref: "#/components/schemas/Profile" }
+        "404": { $ref: "#/components/responses/Error", description: "ITEM_NOT_OWNED" }
+        "409": { $ref: "#/components/responses/Error", description: "NOT_EQUIPPABLE" }
+  /inventory/{id}/sell:
+    post:
+      tags: [Inventory & shop]
+      summary: Sell items for cash
+      description: "Trade items back for cash at the item's sell value. The last copy of the outfit the player is wearing cannot be sold."
+      parameters:
+        - { $ref: "#/components/parameters/CatalogId" }
+        - { $ref: "#/components/parameters/IdempotencyKeyRequired" }
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                quantity: { type: integer, minimum: 1, default: 1 }
+      responses:
+        "200":
+          description: Sold
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  sale:
+                    type: object
+                    properties:
+                      itemId: { type: string }
+                      quantitySold: { type: integer }
+                      cashEarned: { type: integer }
+                      remaining: { type: integer }
+                  profile: { $ref: "#/components/schemas/Profile" }
+        "409": { $ref: "#/components/responses/Error", description: "NOT_ENOUGH_ITEMS / ITEM_EQUIPPED / NOT_SELLABLE" }
+  /shop/offers:
+    get:
+      tags: [Inventory & shop]
+      summary: Active store offers
+      description: "Offers currently on sale, including how many times this player has already bought each one."
+      responses:
+        "200":
+          description: Offers
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  offers: { type: array, items: { $ref: "#/components/schemas/Offer" } }
+  /shop/offers/{id}/purchase:
+    post:
+      tags: [Inventory & shop]
+      summary: Buy an offer
+      description: "Buy an offer. The server charges the price and adds the items in one transaction."
+      parameters:
+        - { $ref: "#/components/parameters/CatalogId" }
+        - { $ref: "#/components/parameters/IdempotencyKeyRequired" }
+      responses:
+        "201":
+          description: Purchased
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  purchase:
+                    type: object
+                    properties:
+                      offerId: { type: string }
+                      itemId: { type: string }
+                      quantityGranted: { type: integer }
+                  profile: { $ref: "#/components/schemas/Profile" }
+        "403": { $ref: "#/components/responses/Error", description: "PURCHASE_LIMIT_REACHED" }
+        "409": { $ref: "#/components/responses/Error", description: "INSUFFICIENT_FUNDS / ALREADY_OWNED" }
+
+  /economy/ads/reward:
+    post:
+      tags: [Economy]
+      summary: Claim a rewarded-ad bonus (development mode only for now)
+      description: "Grants the bonus after a rewarded ad. Today it works only in development mode, because a client claim is not proof that an ad was watched; production needs the ad network to confirm it server-side."
+      parameters: [{ $ref: "#/components/parameters/IdempotencyKeyRequired" }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [rewardType]
+              properties:
+                rewardType: { type: string, enum: [stamina, bonus_cash] }
+      responses:
+        "200":
+          description: Reward granted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  rewardType: { type: string }
+                  profile: { $ref: "#/components/schemas/Profile" }
+        "429": { $ref: "#/components/responses/Error", description: "AD_DAILY_CAP_REACHED" }
+        "501": { $ref: "#/components/responses/Error", description: "Server-side ad verification not configured" }
+  /economy/iap/verify:
+    post:
+      tags: [Economy]
+      summary: "Verify a store receipt (placeholder: always 501)"
+      description: "Where the client will send a store purchase token. Until receipt verification against Google Play and the App Store is implemented, this returns 501 and grants nothing."
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [platform, productId, receipt]
+              properties:
+                platform: { type: string, enum: [google_play, app_store] }
+                productId: { type: string }
+                receipt: { type: string }
+      responses:
+        "501": { $ref: "#/components/responses/Error" }
+  /economy/dev/founders-pass:
+    post:
+      tags: [Economy]
+      summary: Grant the Founders Pass (development mode only)
+      description: "Development shortcut for testing Founders Pass content without a real purchase. Disabled in production."
+      parameters: [{ $ref: "#/components/parameters/IdempotencyKey" }]
+      responses:
+        "200":
+          description: Granted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties: { profile: { $ref: "#/components/schemas/Profile" } }
+        "409": { $ref: "#/components/responses/Error", description: "ALREADY_OWNED" }
+        "501": { $ref: "#/components/responses/Error" }
+
+  /admin/users:
+    get:
+      tags: [Admin]
+      summary: Search players by email prefix
+      description: "Support tool: find a player by the start of their email address."
+      parameters:
+        - { name: email, in: query, schema: { type: string } }
+        - { name: limit, in: query, schema: { type: integer, minimum: 1, maximum: 100, default: 25 } }
+      responses:
+        "200": { $ref: "#/components/responses/Ok" }
+        "403": { $ref: "#/components/responses/Error" }
+  /admin/users/{id}:
+    get:
+      tags: [Admin]
+      summary: One player with profile and recent ledger rows
+      description: "Support tool: one player with their balances and last 50 ledger rows, for investigating a complaint."
+      parameters: [{ $ref: "#/components/parameters/UuidId" }]
+      responses:
+        "403": { $ref: "#/components/responses/Error", description: "Admin role required" }
+        "200": { $ref: "#/components/responses/Ok" }
+        "404": { $ref: "#/components/responses/Error" }
+  /admin/users/{id}/ban:
+    post:
+      tags: [Admin]
+      summary: Ban a player
+      description: "Blocks every request from this account. Existing sessions keep working only until their next request, which is rejected."
+      parameters: [{ $ref: "#/components/parameters/UuidId" }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [reason]
+              properties: { reason: { type: string, maxLength: 500 } }
+      responses:
+        "403": { $ref: "#/components/responses/Error", description: "Admin role required" }
+        "204": { description: Banned }
+  /admin/users/{id}/unban:
+    post:
+      tags: [Admin]
+      summary: Lift a ban
+      description: "Restores access. The player does not need to sign in again."
+      parameters: [{ $ref: "#/components/parameters/UuidId" }]
+      responses:
+        "403": { $ref: "#/components/responses/Error", description: "Admin role required" }
+        "204": { description: Unbanned }
+  /admin/users/{id}/wallet-adjustments:
+    post:
+      tags: [Admin]
+      summary: Correct a player's balance (recorded in the ledger)
+      description: "Give or take cash and gems manually, for refunds and corrections. Always recorded in the ledger with the note."
+      parameters:
+        - { $ref: "#/components/parameters/UuidId" }
+        - { $ref: "#/components/parameters/IdempotencyKeyRequired" }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [note]
+              properties:
+                cash: { type: integer }
+                gems: { type: integer }
+                note: { type: string, maxLength: 500 }
+      responses:
+        "403": { $ref: "#/components/responses/Error", description: "Admin role required" }
+        "200":
+          description: Adjusted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties: { profile: { $ref: "#/components/schemas/Profile" } }
+        "409": { $ref: "#/components/responses/Error", description: "INSUFFICIENT_FUNDS" }
+  /admin/config:
+    get:
+      tags: [Admin]
+      summary: All config rows plus the effective values
+      description: "Every tunable with its stored value, plus the values currently in effect."
+      responses:
+        "403": { $ref: "#/components/responses/Error", description: "Admin role required" }
+        "200": { $ref: "#/components/responses/Ok" }
+  /admin/config/{key}:
+    put:
+      tags: [Admin]
+      summary: Change one tunable (applies within 30 seconds)
+      description: "Tune the game live: prices, XP curve, stamina rate, limits. Values are validated per key and reach all players within 30 seconds."
+      parameters:
+        - { name: key, in: path, required: true, schema: { type: string }, example: stamina_regen_seconds }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [value]
+              properties: { value: { description: Type is validated per key } }
+      responses:
+        "403": { $ref: "#/components/responses/Error", description: "Admin role required" }
+        "200": { $ref: "#/components/responses/Ok" }
+        "400": { $ref: "#/components/responses/Error" }
+  /admin/missions:
+    get:
+      tags: [Admin]
+      summary: List missions (including inactive ones)
+      description: "All missions, including inactive and scheduled ones."
+      parameters:
+        - { name: limit, in: query, schema: { type: integer, minimum: 1, maximum: 500, default: 100 } }
+      responses:
+        "403": { $ref: "#/components/responses/Error", description: "Admin role required" }
+        "200": { $ref: "#/components/responses/Ok" }
+    post:
+      tags: [Admin]
+      summary: Create a mission
+      description: "Place a new mission on the map. It appears in nearby searches immediately unless you schedule it with startsAt."
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/MissionInput" }
+      responses:
+        "403": { $ref: "#/components/responses/Error", description: "Admin role required" }
+        "201": { $ref: "#/components/responses/Ok" }
+        "400": { $ref: "#/components/responses/Error" }
+  /admin/missions/{id}:
+    patch:
+      tags: [Admin]
+      summary: Edit a mission (only the fields you send; latitude and longitude go together)
+      description: "Change a live mission, e.g. its rewards, or set isActive false to take it off the map. Attempts already running keep the rewards they started with."
+      parameters: [{ $ref: "#/components/parameters/UuidId" }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/MissionInput" }
+      responses:
+        "403": { $ref: "#/components/responses/Error", description: "Admin role required" }
+        "200": { $ref: "#/components/responses/Ok" }
+        "404": { $ref: "#/components/responses/Error" }
+  /admin/vehicles/{id}:
+    put:
+      tags: [Admin]
+      summary: Create or replace a catalog vehicle (id must match the Unity vehicle id)
+      description: "Add or update a vehicle. The id must be the same string the Unity project uses for that vehicle."
+      parameters: [{ $ref: "#/components/parameters/CatalogId" }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name]
+              properties:
+                name: { type: string }
+                description: { type: string }
+                priceCash: { type: integer, minimum: 0, default: 0 }
+                priceGems: { type: integer, minimum: 0, default: 0 }
+                maxUpgradeLevel: { type: integer, default: 5 }
+                upgradeBaseCostCash: { type: integer, default: 500 }
+                minPlayerLevel: { type: integer, default: 1 }
+                isStarter: { type: boolean, default: false }
+                isActive: { type: boolean, default: true }
+                sortOrder: { type: integer, default: 0 }
+      responses:
+        "403": { $ref: "#/components/responses/Error", description: "Admin role required" }
+        "200": { $ref: "#/components/responses/Ok" }
+  /admin/items/{id}:
+    put:
+      tags: [Admin]
+      summary: Create or replace a catalog item
+      description: "Add or update an item (outfit, weapon, part or consumable). The id must match the Unity item id."
+      parameters: [{ $ref: "#/components/parameters/CatalogId" }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name, category]
+              properties:
+                name: { type: string }
+                description: { type: string }
+                category: { type: string, enum: [Weapon, Outfit, VehiclePart, Consumable] }
+                rarity: { type: string, enum: [Common, Rare, Epic, Legendary], default: Common }
+                sellValueCash: { type: integer, minimum: 0, default: 0 }
+                isStackable: { type: boolean, default: false }
+                isActive: { type: boolean, default: true }
+      responses:
+        "403": { $ref: "#/components/responses/Error", description: "Admin role required" }
+        "200": { $ref: "#/components/responses/Ok" }
+  /admin/offers/{id}:
+    put:
+      tags: [Admin]
+      summary: Create or replace a store offer
+      description: "Put an item on sale, optionally with a purchase limit per player and a start and end time."
+      parameters: [{ $ref: "#/components/parameters/CatalogId" }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [title, itemId]
+              properties:
+                title: { type: string }
+                itemId: { type: string }
+                quantity: { type: integer, minimum: 1, default: 1 }
+                priceCash: { type: integer, minimum: 0, default: 0 }
+                priceGems: { type: integer, minimum: 0, default: 0 }
+                maxPerUser: { type: [integer, "null"], default: null }
+                isActive: { type: boolean, default: true }
+                startsAt: { type: [string, "null"], format: date-time }
+                endsAt: { type: [string, "null"], format: date-time }
+                sortOrder: { type: integer, default: 0 }
+      responses:
+        "200": { $ref: "#/components/responses/Ok" }
+        "403": { $ref: "#/components/responses/Error", description: "Admin role required" }
+        "404": { $ref: "#/components/responses/Error", description: "The item the offer sells does not exist" }
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  parameters:
+    UuidId:
+      name: id
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+    CatalogId:
+      name: id
+      in: path
+      required: true
+      description: Catalog id such as `veh_starter_drifter`
+      schema: { type: string, pattern: "^[A-Za-z0-9_.-]+$" }
+    IdempotencyKey:
+      name: Idempotency-Key
+      in: header
+      required: false
+      description: Recommended. A GUID per user action; retries with the same key return the first response.
+      schema: { type: string, minLength: 8, maxLength: 128 }
+    IdempotencyKeyRequired:
+      name: Idempotency-Key
+      in: header
+      required: true
+      description: Required. A GUID per user action; retries with the same key return the first response.
+      schema: { type: string, minLength: 8, maxLength: 128 }
+
+  responses:
+    Ok:
+      description: Success
+      content:
+        application/json:
+          schema: { type: object, additionalProperties: true }
+    Error:
+      description: Failure
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Error" }
+    Session:
+      description: Signed in
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Session" }
+    AttemptStarted:
+      description: Attempt started
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              attempt: { $ref: "#/components/schemas/Attempt" }
+              mission: { $ref: "#/components/schemas/Mission" }
+              profile: { $ref: "#/components/schemas/Profile" }
+    AttemptEnded:
+      description: Attempt ended
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              attempt: { $ref: "#/components/schemas/Attempt" }
+              profile: { $ref: "#/components/schemas/Profile" }
+    VehicleChanged:
+      description: Vehicle updated
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              vehicle: { $ref: "#/components/schemas/OwnedVehicle" }
+              profile: { $ref: "#/components/schemas/Profile" }
+
+  schemas:
+    Error:
+      type: object
+      properties:
+        error:
+          type: object
+          properties:
+            code: { type: string, example: INSUFFICIENT_FUNDS }
+            message: { type: string }
+            details: { description: Optional context, e.g. failing fields or availableAt }
+    DisplayName:
+      type: string
+      minLength: 3
+      maxLength: 24
+      description: Letters, numbers, spaces and `_ . -`
+    RefreshBody:
+      type: object
+      required: [refreshToken]
+      properties:
+        refreshToken: { type: string }
+    Position:
+      type: object
+      required: [lat, lng]
+      properties:
+        lat: { type: number, minimum: -90, maximum: 90 }
+        lng: { type: number, minimum: -180, maximum: 180 }
+    Color:
+      type: object
+      description: Unity SerializableColor, channels 0–1
+      required: [r, g, b]
+      properties:
+        r: { type: number, minimum: 0, maximum: 1 }
+        g: { type: number, minimum: 0, maximum: 1 }
+        b: { type: number, minimum: 0, maximum: 1 }
+        a: { type: number, minimum: 0, maximum: 1, default: 1 }
+    User:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        email: { type: [string, "null"] }
+        displayName: { type: string }
+        isGuest: { type: boolean }
+        role: { type: string, enum: [player, admin] }
+        createdAt: { type: string, format: date-time }
+    Stamina:
+      type: object
+      properties:
+        current: { type: integer }
+        max: { type: integer }
+        regenSeconds: { type: integer }
+        nextPointAt: { type: [string, "null"], format: date-time }
+        fullAt: { type: [string, "null"], format: date-time }
+    Profile:
+      type: object
+      description: The authoritative player state. Replace local values with this on every response.
+      properties:
+        level: { type: integer }
+        xp: { type: integer, description: Progress inside the current level }
+        xpToNextLevel: { type: integer }
+        totalXp: { type: integer }
+        cash: { type: integer }
+        gems: { type: integer }
+        stamina: { $ref: "#/components/schemas/Stamina" }
+        equippedVehicleId: { type: [string, "null"] }
+        equippedOutfitId: { type: [string, "null"] }
+        hasFoundersPass: { type: boolean }
+    Session:
+      type: object
+      properties:
+        accessToken: { type: string }
+        accessTokenExpiresIn: { type: integer, example: 900 }
+        refreshToken: { type: string }
+        refreshTokenExpiresAt: { type: string, format: date-time }
+        user: { $ref: "#/components/schemas/User" }
+        profile: { $ref: "#/components/schemas/Profile" }
+    Reward:
+      type: object
+      properties:
+        cash: { type: integer }
+        gems: { type: integer }
+        xp: { type: integer }
+        itemId: { type: [string, "null"] }
+    Mission:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        title: { type: string }
+        description: { type: string }
+        missionType: { type: string, enum: [DeadDropCourier, TurfSkirmishAR, ZoneReconWalking, HighRollerSprint] }
+        latitude: { type: number }
+        longitude: { type: number }
+        triggerRadiusM: { type: number }
+        timeLimitS: { type: integer }
+        requiredStamina: { type: integer }
+        reward: { $ref: "#/components/schemas/Reward" }
+        minPlayerLevel: { type: integer }
+        cooldownS: { type: [integer, "null"], description: null means the mission can only be completed once }
+    NearbyMission:
+      allOf:
+        - { $ref: "#/components/schemas/Mission" }
+        - type: object
+          properties:
+            distanceM: { type: integer }
+            availability:
+              type: object
+              properties:
+                canStart: { type: boolean }
+                reason: { type: [string, "null"], enum: [LEVEL_TOO_LOW, MISSION_ON_COOLDOWN, MISSION_NOT_REPEATABLE, null] }
+                availableAt: { type: [string, "null"], format: date-time }
+    Attempt:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        missionId: { type: string, format: uuid }
+        status: { type: string, enum: [active, completed, failed, abandoned, expired] }
+        staminaCharged: { type: integer }
+        startedAt: { type: string, format: date-time }
+        expiresAt: { type: string, format: date-time }
+        finishedAt: { type: [string, "null"], format: date-time }
+        reward: { $ref: "#/components/schemas/Reward" }
+        retryOf: { type: [string, "null"], format: uuid }
+        retryCount: { type: integer }
+        canRetryFree: { type: boolean }
+        result:
+          type: [object, "null"]
+          properties:
+            reward: { $ref: "#/components/schemas/Reward" }
+            levelsGained: { type: integer }
+            serverElapsedS: { type: integer }
+    CatalogVehicle:
+      type: object
+      properties:
+        id: { type: string }
+        name: { type: string }
+        description: { type: string }
+        priceCash: { type: integer }
+        priceGems: { type: integer }
+        maxUpgradeLevel: { type: integer }
+        upgradeBaseCostCash: { type: integer }
+        minPlayerLevel: { type: integer }
+        isStarter: { type: boolean }
+    OwnedVehicle:
+      type: object
+      properties:
+        vehicleId: { type: string }
+        name: { type: string }
+        isEquipped: { type: boolean }
+        upgrades:
+          type: object
+          properties:
+            speed: { type: integer }
+            acceleration: { type: integer }
+            handling: { type: integer }
+        maxUpgradeLevel: { type: integer }
+        nextUpgradeCostCash:
+          type: object
+          description: null for a stat already at the maximum level
+          properties:
+            speed: { type: [integer, "null"] }
+            acceleration: { type: [integer, "null"] }
+            handling: { type: [integer, "null"] }
+        customization:
+          type: object
+          properties:
+            hasCustomPaint: { type: boolean }
+            paintColor: { $ref: "#/components/schemas/Color" }
+            hasCustomUnderglow: { type: boolean }
+            underglowEnabled: { type: boolean }
+            underglowColor: { $ref: "#/components/schemas/Color" }
+        acquiredAt: { type: string, format: date-time }
+    CatalogItem:
+      type: object
+      properties:
+        id: { type: string }
+        name: { type: string }
+        description: { type: string }
+        category: { type: string, enum: [Weapon, Outfit, VehiclePart, Consumable] }
+        rarity: { type: string, enum: [Common, Rare, Epic, Legendary] }
+        sellValueCash: { type: integer }
+        isStackable: { type: boolean }
+    InventoryItem:
+      type: object
+      properties:
+        itemId: { type: string }
+        name: { type: string }
+        category: { type: string }
+        rarity: { type: string }
+        quantity: { type: integer }
+        sellValueCash: { type: integer }
+        isEquipped: { type: boolean }
+        acquiredAt: { type: string, format: date-time }
+    Offer:
+      type: object
+      properties:
+        id: { type: string }
+        title: { type: string }
+        item:
+          type: object
+          properties:
+            id: { type: string }
+            name: { type: string }
+            category: { type: string }
+            rarity: { type: string }
+        quantity: { type: integer }
+        priceCash: { type: integer }
+        priceGems: { type: integer }
+        maxPerUser: { type: [integer, "null"] }
+        purchasedCount: { type: integer }
+        endsAt: { type: [string, "null"], format: date-time }
+    Transaction:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        reason: { type: string, example: mission_reward }
+        cashDelta: { type: integer }
+        gemsDelta: { type: integer }
+        cashAfter: { type: integer }
+        gemsAfter: { type: integer }
+        refType: { type: [string, "null"] }
+        refId: { type: [string, "null"] }
+        metadata: { type: object, additionalProperties: true }
+        createdAt: { type: string, format: date-time }
+    MissionInput:
+      type: object
+      description: POST requires title, missionType, latitude, longitude. PATCH accepts any subset.
+      properties:
+        title: { type: string }
+        description: { type: string }
+        missionType: { type: string, enum: [DeadDropCourier, TurfSkirmishAR, ZoneReconWalking, HighRollerSprint] }
+        latitude: { type: number, minimum: -90, maximum: 90 }
+        longitude: { type: number, minimum: -180, maximum: 180 }
+        triggerRadiusM: { type: number, default: 30 }
+        timeLimitS: { type: integer, default: 120 }
+        requiredStamina: { type: integer, default: 15 }
+        rewardCash: { type: integer, default: 500 }
+        rewardGems: { type: integer, default: 5 }
+        rewardXp: { type: integer, default: 250 }
+        rewardItemId: { type: [string, "null"] }
+        minPlayerLevel: { type: integer, default: 1 }
+        cooldownS: { type: [integer, "null"], default: 3600 }
+        minCompletionS: { type: integer, default: 10 }
+        isActive: { type: boolean, default: true }
+        startsAt: { type: [string, "null"], format: date-time }
+        endsAt: { type: [string, "null"], format: date-time }

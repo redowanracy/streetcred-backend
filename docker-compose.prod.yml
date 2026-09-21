@@ -1,0 +1,42 @@
+name: streetcred-prod
+
+services:
+  postgres:
+    image: postgis/postgis:16-3.4
+    container_name: streetcred-prod-db
+    environment:
+      POSTGRES_USER: streetcred
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-streetcred_secure_password_2026}
+      POSTGRES_DB: streetcred
+    volumes:
+      - streetcred_prod_pg:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U streetcred -d streetcred"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    restart: unless-stopped
+
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: streetcred-prod-api
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      HOST: 0.0.0.0
+      LOG_LEVEL: info
+      JWT_SECRET: ${JWT_SECRET:-streetcred_super_secret_jwt_key_at_least_32_bytes_long_2026}
+      DATABASE_URL: postgres://streetcred:${DB_PASSWORD:-streetcred_secure_password_2026}@postgres:5432/streetcred
+      DB_POOL_MAX: 20
+      TRUST_PROXY: 1
+    ports:
+      - "3000:3000"
+    restart: unless-stopped
+
+volumes:
+  streetcred_prod_pg:

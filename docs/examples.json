@@ -1,0 +1,1809 @@
+{
+  "GET /health": {
+    "status": 200,
+    "body": {
+      "status": "ok",
+      "time": "2026-09-20T04:27:25.044Z"
+    }
+  },
+  "GET /health/ready": {
+    "status": 200,
+    "body": {
+      "status": "ready"
+    }
+  },
+  "GET /config": {
+    "status": 200,
+    "body": {
+      "config": {
+        "starting_cash": 5000,
+        "starting_gems": 50,
+        "starting_stamina_max": 100,
+        "starter_vehicle_id": "veh_starter_drifter",
+        "starter_outfit_id": "outfit_street_jacket",
+        "stamina_regen_seconds": 180,
+        "xp_per_level": 1000,
+        "mission_proximity_enforced": true,
+        "mission_proximity_tolerance_m": 150,
+        "mission_expiry_grace_s": 30,
+        "sprint_checkpoint_bonus_s": 15,
+        "mission_free_retries": 1,
+        "mission_retry_window_s": 600,
+        "nearby_max_radius_m": 10000,
+        "nearby_max_results": 100,
+        "customization_cost_cash": 0,
+        "ad_reward_daily_cap": 10,
+        "ad_reward_stamina": 30,
+        "ad_reward_cash": 500,
+        "founders_pass_cash": 10000,
+        "founders_pass_gems": 500
+      }
+    }
+  },
+  "POST /auth/guest": {
+    "status": 201,
+    "body": {
+      "accessToken": "<access token — a signed JWT>",
+      "accessTokenExpiresIn": 900,
+      "refreshToken": "<refresh token — store it securely>",
+      "refreshTokenExpiresAt": "2026-12-19T04:27:25.090Z",
+      "user": {
+        "id": "0cf05b31-c2da-44ce-a536-6c39d64a69e9",
+        "email": null,
+        "displayName": "Postman Player",
+        "isGuest": true,
+        "role": "player",
+        "createdAt": "2026-09-20T04:27:25.079Z"
+      },
+      "profile": {
+        "level": 1,
+        "xp": 0,
+        "xpToNextLevel": 1000,
+        "totalXp": 0,
+        "cash": 5000,
+        "gems": 50,
+        "stamina": {
+          "current": 100,
+          "max": 100,
+          "regenSeconds": 180,
+          "nextPointAt": null,
+          "fullAt": null
+        },
+        "equippedVehicleId": "veh_starter_drifter",
+        "equippedOutfitId": "outfit_street_jacket",
+        "hasFoundersPass": false
+      }
+    },
+    "requestBody": {
+      "displayName": "Postman Player"
+    }
+  },
+  "POST /auth/signup": {
+    "status": 201,
+    "body": {
+      "accessToken": "<access token — a signed JWT>",
+      "accessTokenExpiresIn": 900,
+      "refreshToken": "<refresh token — store it securely>",
+      "refreshTokenExpiresAt": "2026-12-19T04:27:25.116Z",
+      "user": {
+        "id": "dd39e7aa-42b6-451d-9b0f-ae2311192f66",
+        "email": "admin@example.com",
+        "displayName": "Player_2F4A83",
+        "isGuest": false,
+        "role": "player",
+        "createdAt": "2026-09-20T04:27:25.109Z"
+      },
+      "profile": {
+        "level": 1,
+        "xp": 0,
+        "xpToNextLevel": 1000,
+        "totalXp": 0,
+        "cash": 5000,
+        "gems": 50,
+        "stamina": {
+          "current": 100,
+          "max": 100,
+          "regenSeconds": 180,
+          "nextPointAt": null,
+          "fullAt": null
+        },
+        "equippedVehicleId": "veh_starter_drifter",
+        "equippedOutfitId": "outfit_street_jacket",
+        "hasFoundersPass": false
+      }
+    },
+    "requestBody": {
+      "email": "admin@example.com",
+      "password": "correct-horse-battery"
+    }
+  },
+  "POST /auth/login": {
+    "status": 200,
+    "body": {
+      "accessToken": "<access token — a signed JWT>",
+      "accessTokenExpiresIn": 900,
+      "refreshToken": "<refresh token — store it securely>",
+      "refreshTokenExpiresAt": "2026-12-19T04:27:25.138Z",
+      "user": {
+        "id": "dd39e7aa-42b6-451d-9b0f-ae2311192f66",
+        "email": "admin@example.com",
+        "displayName": "Player_2F4A83",
+        "isGuest": false,
+        "role": "admin",
+        "createdAt": "2026-09-20T04:27:25.109Z"
+      },
+      "profile": {
+        "level": 1,
+        "xp": 0,
+        "xpToNextLevel": 1000,
+        "totalXp": 0,
+        "cash": 5000,
+        "gems": 50,
+        "stamina": {
+          "current": 100,
+          "max": 100,
+          "regenSeconds": 180,
+          "nextPointAt": null,
+          "fullAt": null
+        },
+        "equippedVehicleId": "veh_starter_drifter",
+        "equippedOutfitId": "outfit_street_jacket",
+        "hasFoundersPass": false
+      }
+    },
+    "requestBody": {
+      "email": "admin@example.com",
+      "password": "correct-horse-battery"
+    }
+  },
+  "PUT /admin/vehicles/{id}": {
+    "status": 200,
+    "body": {
+      "vehicle": {
+        "id": "veh_night_interceptor",
+        "name": "Night Interceptor",
+        "description": "Fast street racer.",
+        "priceCash": 4000,
+        "priceGems": 0,
+        "maxUpgradeLevel": 5,
+        "upgradeBaseCostCash": 750,
+        "minPlayerLevel": 1,
+        "isStarter": false
+      }
+    }
+  },
+  "PUT /admin/items/{id}": {
+    "status": 200,
+    "body": {
+      "item": {
+        "id": "outfit_neon_jacket",
+        "name": "Neon Jacket",
+        "description": "Glows in the dark.",
+        "category": "Outfit",
+        "rarity": "Rare",
+        "sellValueCash": 400,
+        "isStackable": false
+      }
+    }
+  },
+  "PUT /admin/offers/{id}": {
+    "status": 200,
+    "body": {
+      "offer": {
+        "id": "offer_nitro_pack",
+        "title": "Nitro pack x3",
+        "item_id": "consumable_nitro",
+        "quantity": 3,
+        "price_cash": 300,
+        "price_gems": 0,
+        "max_per_user": null,
+        "is_active": true,
+        "starts_at": null,
+        "ends_at": null,
+        "sort_order": 10,
+        "created_at": "2026-09-20T04:27:25.168Z",
+        "updated_at": "2026-09-20T04:27:25.168Z"
+      }
+    }
+  },
+  "POST /admin/missions": {
+    "status": 201,
+    "body": {
+      "mission": {
+        "id": "f21d5fd4-c945-4e26-b645-00a2ed74e7aa",
+        "title": "Trafalgar Square Drop",
+        "description": "Retrieve the encrypted memory stick before rival syndicates intercept.",
+        "missionType": "DeadDropCourier",
+        "latitude": 51.508,
+        "longitude": -0.1281,
+        "triggerRadiusM": 35,
+        "timeLimitS": 120,
+        "requiredStamina": 15,
+        "reward": {
+          "cash": 750,
+          "gems": 10,
+          "xp": 300,
+          "itemId": null
+        },
+        "minPlayerLevel": 1,
+        "cooldownS": 3600,
+        "minCompletionS": 0,
+        "isActive": true,
+        "startsAt": null,
+        "endsAt": null
+      }
+    }
+  },
+  "PATCH /admin/missions/{id}": {
+    "status": 200,
+    "body": {
+      "mission": {
+        "id": "f21d5fd4-c945-4e26-b645-00a2ed74e7aa",
+        "title": "Trafalgar Square Drop",
+        "description": "Retrieve the encrypted memory stick before rival syndicates intercept.",
+        "missionType": "DeadDropCourier",
+        "latitude": 51.508,
+        "longitude": -0.1281,
+        "triggerRadiusM": 35,
+        "timeLimitS": 120,
+        "requiredStamina": 15,
+        "reward": {
+          "cash": 750,
+          "gems": 12,
+          "xp": 300,
+          "itemId": null
+        },
+        "minPlayerLevel": 1,
+        "cooldownS": 3600,
+        "minCompletionS": 0,
+        "isActive": true,
+        "startsAt": null,
+        "endsAt": null
+      }
+    }
+  },
+  "GET /admin/missions": {
+    "status": 200,
+    "body": {
+      "missions": [
+        {
+          "id": "f21d5fd4-c945-4e26-b645-00a2ed74e7aa",
+          "title": "Trafalgar Square Drop",
+          "description": "Retrieve the encrypted memory stick before rival syndicates intercept.",
+          "missionType": "DeadDropCourier",
+          "latitude": 51.508,
+          "longitude": -0.1281,
+          "triggerRadiusM": 35,
+          "timeLimitS": 120,
+          "requiredStamina": 15,
+          "reward": {
+            "cash": 750,
+            "gems": 12,
+            "xp": 300,
+            "itemId": null
+          },
+          "minPlayerLevel": 1,
+          "cooldownS": 3600,
+          "isActive": true
+        }
+      ]
+    }
+  },
+  "GET /admin/config": {
+    "status": 200,
+    "body": {
+      "config": [
+        {
+          "key": "ad_reward_cash",
+          "value": 500,
+          "description": "Cash granted by a bonus-cash ad",
+          "updated_at": "2026-09-20T04:27:25.029Z"
+        },
+        {
+          "key": "ad_reward_daily_cap",
+          "value": 10,
+          "description": "Rewarded ads a player can redeem per UTC day",
+          "updated_at": "2026-09-20T04:27:25.029Z"
+        },
+        {
+          "key": "ad_reward_stamina",
+          "value": 30,
+          "description": "Stamina restored by a stamina ad",
+          "updated_at": "2026-09-20T04:27:25.029Z"
+        },
+        {
+          "key": "customization_cost_cash",
+          "value": 0,
+          "description": "Cash charged per paint/underglow change",
+          "updated_at": "2026-09-20T04:27:25.029Z"
+        },
+        {
+          "key": "founders_pass_cash",
+          "value": 10000,
+          "description": "Cash bundled with the Founders Pass",
+          "updated_at": "2026-09-20T04:27:25.029Z"
+        },
+        {
+          "key": "founders_pass_gems",
+          "value": 500,
+          "description": "Gems bundled with the Founders Pass",
+          "updated_at": "2026-09-20T04:27:25.029Z"
+        },
+        {
+          "key": "mission_expiry_grace_s",
+          "value": 30,
+          "description": "Extra seconds after the time limit before an attempt expires (network latency)",
+          "updated_at": "2026-09-20T04:27:25.029Z"
+        },
+        {
+          "key": "mission_free_retries",
+          "value": 1,
+          "description": "Free (no stamina) retries allowed after a failed or timed-out attempt",
+          "updated_at": "2026-09-20T04:27:25.029Z"
+        },
+        {
+          "key": "mission_proximity_enforced",
+          "value": true,
+          "description": "Reject mission starts whose reported position is too far from the mission",
+          "updated_at": "2026-09-20T04:27:25.029Z"
+        },
+        {
+          "key": "mission_proximity_tolerance_m",
+          "value": 150,
+          "description": "Extra metres allowed beyond trigger radius for GPS noise",
+          "updated_at": "2026-09-20T04:27:25.029Z"
+        },
+        {
+          "key": "mission_retry_window_s",
+          "value": 600,
+          "description": "How long after failing a free retry stays available",
+          "updated_at": "2026-09-20T04:27:25.029Z"
+        },
+        {
+          "key": "nearby_max_radius_m",
+          "value": 10000,
+          "description": "Largest radius a nearby-missions query may request",
+          "updated_at": "2026-09-20T04:27:25.029Z"
+        },
+        {
+          "key": "nearby_max_results",
+          "value": 100,
+          "description": "Maximum missions returned by a nearby query",
+          "updated_at": "2026-09-20T04:27:25.029Z"
+        },
+        {
+          "key": "sprint_checkpoint_bonus_s",
+          "value": 15,
+          "description": "Bonus seconds per HighRollerSprint checkpoint (3 checkpoints)",
+          "updated_at": "2026-09-20T04:27:25.029Z"
+        },
+        {
+          "key": "stamina_regen_seconds",
+          "value": 180,
+          "description": "Seconds to regenerate 1 stamina point",
+          "updated_at": "2026-09-20T04:27:25.029Z"
+        },
+        {
+          "key": "starter_outfit_id",
+          "value": "outfit_street_jacket",
+          "description": "Outfit every new account owns and has equipped",
+          "updated_at": "2026-09-20T04:27:25.029Z"
+        },
+        {
+          "key": "starter_vehicle_id",
+          "value": "veh_starter_drifter",
+          "description": "Vehicle every new account owns and has equipped",
+          "updated_at": "2026-09-20T04:27:25.029Z"
+        },
+        {
+          "key": "starting_cash",
+          "value": 5000,
+          "description": "Cash given to a new account",
+          "updated_at": "2026-09-20T04:27:25.029Z"
+        },
+        {
+          "key": "starting_gems",
+          "value": 50,
+          "description": "Gems given to a new account",
+          "updated_at": "2026-09-20T04:27:25.029Z"
+        },
+        {
+          "key": "starting_stamina_max",
+          "value": 100,
+          "description": "Max stamina for a new account",
+          "updated_at": "2026-09-20T04:27:25.029Z"
+        },
+        {
+          "key": "xp_per_level",
+          "value": 1000,
+          "description": "XP needed to leave level L is L * xp_per_level (matches Unity)",
+          "updated_at": "2026-09-20T04:27:25.029Z"
+        }
+      ],
+      "effective": {
+        "starting_cash": 5000,
+        "starting_gems": 50,
+        "starting_stamina_max": 100,
+        "starter_vehicle_id": "veh_starter_drifter",
+        "starter_outfit_id": "outfit_street_jacket",
+        "stamina_regen_seconds": 180,
+        "xp_per_level": 1000,
+        "mission_proximity_enforced": true,
+        "mission_proximity_tolerance_m": 150,
+        "mission_expiry_grace_s": 30,
+        "sprint_checkpoint_bonus_s": 15,
+        "mission_free_retries": 1,
+        "mission_retry_window_s": 600,
+        "nearby_max_radius_m": 10000,
+        "nearby_max_results": 100,
+        "customization_cost_cash": 0,
+        "ad_reward_daily_cap": 10,
+        "ad_reward_stamina": 30,
+        "ad_reward_cash": 500,
+        "founders_pass_cash": 10000,
+        "founders_pass_gems": 500
+      }
+    }
+  },
+  "PUT /admin/config/{key}": {
+    "status": 200,
+    "body": {
+      "key": "stamina_regen_seconds",
+      "value": 180
+    }
+  },
+  "GET /admin/users": {
+    "status": 200,
+    "body": {
+      "users": [
+        {
+          "id": "dd39e7aa-42b6-451d-9b0f-ae2311192f66",
+          "email": "admin@example.com",
+          "displayName": "Player_2F4A83",
+          "isGuest": false,
+          "role": "admin",
+          "createdAt": "2026-09-20T04:27:25.109Z",
+          "isBanned": false
+        }
+      ]
+    }
+  },
+  "GET /admin/users/{id}": {
+    "status": 200,
+    "body": {
+      "user": {
+        "id": "0cf05b31-c2da-44ce-a536-6c39d64a69e9",
+        "email": null,
+        "displayName": "Postman Player",
+        "isGuest": true,
+        "role": "player",
+        "createdAt": "2026-09-20T04:27:25.079Z",
+        "isBanned": false,
+        "banReason": null
+      },
+      "profile": {
+        "level": 1,
+        "xp": 0,
+        "xpToNextLevel": 1000,
+        "totalXp": 0,
+        "cash": 5000,
+        "gems": 50,
+        "stamina": {
+          "current": 100,
+          "max": 100,
+          "regenSeconds": 180,
+          "nextPointAt": null,
+          "fullAt": null
+        },
+        "equippedVehicleId": "veh_starter_drifter",
+        "equippedOutfitId": "outfit_street_jacket",
+        "hasFoundersPass": false
+      },
+      "recentTransactions": [
+        {
+          "id": "19a25df9-aea5-4461-9349-74f9942529bf",
+          "user_id": "0cf05b31-c2da-44ce-a536-6c39d64a69e9",
+          "reason": "account_created",
+          "cash_delta": 5000,
+          "gems_delta": 50,
+          "cash_after": 5000,
+          "gems_after": 50,
+          "ref_type": null,
+          "ref_id": null,
+          "metadata": {},
+          "created_at": "2026-09-20T04:27:25.079Z"
+        }
+      ]
+    }
+  },
+  "POST /admin/users/{id}/wallet-adjustments": {
+    "status": 200,
+    "body": {
+      "profile": {
+        "level": 1,
+        "xp": 0,
+        "xpToNextLevel": 1000,
+        "totalXp": 0,
+        "cash": 5500,
+        "gems": 50,
+        "stamina": {
+          "current": 100,
+          "max": 100,
+          "regenSeconds": 180,
+          "nextPointAt": null,
+          "fullAt": null
+        },
+        "equippedVehicleId": "veh_starter_drifter",
+        "equippedOutfitId": "outfit_street_jacket",
+        "hasFoundersPass": false
+      }
+    }
+  },
+  "POST /admin/users/{id}/ban": {
+    "status": 204,
+    "body": {}
+  },
+  "POST /admin/users/{id}/unban": {
+    "status": 204,
+    "body": {}
+  },
+  "GET /me": {
+    "status": 200,
+    "body": {
+      "user": {
+        "id": "0cf05b31-c2da-44ce-a536-6c39d64a69e9",
+        "email": null,
+        "displayName": "Postman Player",
+        "isGuest": true,
+        "role": "player",
+        "createdAt": "2026-09-20T04:27:25.079Z"
+      },
+      "profile": {
+        "level": 1,
+        "xp": 0,
+        "xpToNextLevel": 1000,
+        "totalXp": 0,
+        "cash": 5500,
+        "gems": 50,
+        "stamina": {
+          "current": 100,
+          "max": 100,
+          "regenSeconds": 180,
+          "nextPointAt": null,
+          "fullAt": null
+        },
+        "equippedVehicleId": "veh_starter_drifter",
+        "equippedOutfitId": "outfit_street_jacket",
+        "hasFoundersPass": false
+      },
+      "vehicles": [
+        {
+          "vehicleId": "veh_starter_drifter",
+          "name": "Starter Drifter",
+          "isEquipped": true,
+          "upgrades": {
+            "speed": 0,
+            "acceleration": 0,
+            "handling": 0
+          },
+          "maxUpgradeLevel": 5,
+          "nextUpgradeCostCash": {
+            "speed": 500,
+            "acceleration": 500,
+            "handling": 500
+          },
+          "customization": {
+            "hasCustomPaint": false,
+            "paintColor": {
+              "a": 1,
+              "b": 1,
+              "g": 1,
+              "r": 0
+            },
+            "hasCustomUnderglow": false,
+            "underglowEnabled": true,
+            "underglowColor": {
+              "a": 1,
+              "b": 1,
+              "g": 1,
+              "r": 0
+            }
+          },
+          "acquiredAt": "2026-09-20T04:27:25.079Z"
+        }
+      ],
+      "inventory": [
+        {
+          "itemId": "outfit_street_jacket",
+          "name": "Street Jacket",
+          "category": "Outfit",
+          "rarity": "Common",
+          "quantity": 1,
+          "sellValueCash": 0,
+          "isEquipped": true,
+          "acquiredAt": "2026-09-20T04:27:25.079Z"
+        }
+      ],
+      "activeAttempt": null
+    }
+  },
+  "PATCH /me": {
+    "status": 200,
+    "body": {
+      "user": {
+        "id": "0cf05b31-c2da-44ce-a536-6c39d64a69e9",
+        "email": null,
+        "displayName": "Neon Rider",
+        "isGuest": true,
+        "role": "player",
+        "createdAt": "2026-09-20T04:27:25.079Z"
+      }
+    }
+  },
+  "GET /catalog/vehicles": {
+    "status": 200,
+    "body": {
+      "vehicles": [
+        {
+          "id": "veh_starter_drifter",
+          "name": "Starter Drifter",
+          "description": "Your first ride.",
+          "priceCash": 0,
+          "priceGems": 0,
+          "maxUpgradeLevel": 5,
+          "upgradeBaseCostCash": 500,
+          "minPlayerLevel": 1,
+          "isStarter": true
+        },
+        {
+          "id": "veh_night_interceptor",
+          "name": "Night Interceptor",
+          "description": "Fast street racer.",
+          "priceCash": 4000,
+          "priceGems": 0,
+          "maxUpgradeLevel": 5,
+          "upgradeBaseCostCash": 750,
+          "minPlayerLevel": 1,
+          "isStarter": false
+        }
+      ]
+    }
+  },
+  "GET /catalog/items": {
+    "status": 200,
+    "body": {
+      "items": [
+        {
+          "id": "consumable_nitro",
+          "name": "Nitro Canister",
+          "description": "",
+          "category": "Consumable",
+          "rarity": "Common",
+          "sellValueCash": 50,
+          "isStackable": true
+        },
+        {
+          "id": "outfit_neon_jacket",
+          "name": "Neon Jacket",
+          "description": "Glows in the dark.",
+          "category": "Outfit",
+          "rarity": "Rare",
+          "sellValueCash": 400,
+          "isStackable": false
+        },
+        {
+          "id": "outfit_street_jacket",
+          "name": "Street Jacket",
+          "description": "Default outfit.",
+          "category": "Outfit",
+          "rarity": "Common",
+          "sellValueCash": 0,
+          "isStackable": false
+        }
+      ]
+    }
+  },
+  "GET /missions/nearby": {
+    "status": 200,
+    "body": {
+      "radiusM": 2000,
+      "missions": [
+        {
+          "id": "f21d5fd4-c945-4e26-b645-00a2ed74e7aa",
+          "title": "Trafalgar Square Drop",
+          "description": "Retrieve the encrypted memory stick before rival syndicates intercept.",
+          "missionType": "DeadDropCourier",
+          "latitude": 51.508,
+          "longitude": -0.1281,
+          "triggerRadiusM": 35,
+          "timeLimitS": 120,
+          "requiredStamina": 15,
+          "reward": {
+            "cash": 750,
+            "gems": 12,
+            "xp": 300,
+            "itemId": null
+          },
+          "minPlayerLevel": 1,
+          "cooldownS": 3600,
+          "distanceM": 0,
+          "availability": {
+            "canStart": true,
+            "reason": null,
+            "availableAt": null
+          }
+        }
+      ]
+    }
+  },
+  "GET /missions/{id}": {
+    "status": 200,
+    "body": {
+      "mission": {
+        "id": "f21d5fd4-c945-4e26-b645-00a2ed74e7aa",
+        "title": "Trafalgar Square Drop",
+        "description": "Retrieve the encrypted memory stick before rival syndicates intercept.",
+        "missionType": "DeadDropCourier",
+        "latitude": 51.508,
+        "longitude": -0.1281,
+        "triggerRadiusM": 35,
+        "timeLimitS": 120,
+        "requiredStamina": 15,
+        "reward": {
+          "cash": 750,
+          "gems": 12,
+          "xp": 300,
+          "itemId": null
+        },
+        "minPlayerLevel": 1,
+        "cooldownS": 3600
+      }
+    }
+  },
+  "POST /missions/{id}/attempts": {
+    "status": 201,
+    "body": {
+      "attempt": {
+        "id": "21598339-7d5d-496d-8f0b-116a3a37d2d0",
+        "missionId": "f21d5fd4-c945-4e26-b645-00a2ed74e7aa",
+        "status": "active",
+        "staminaCharged": 15,
+        "startedAt": "2026-09-20T04:27:25.338Z",
+        "expiresAt": "2026-09-20T04:29:55.338Z",
+        "finishedAt": null,
+        "reward": {
+          "cash": 750,
+          "gems": 12,
+          "xp": 300,
+          "itemId": null
+        },
+        "retryOf": null,
+        "retryCount": 0,
+        "canRetryFree": false,
+        "result": null
+      },
+      "mission": {
+        "id": "f21d5fd4-c945-4e26-b645-00a2ed74e7aa",
+        "title": "Trafalgar Square Drop",
+        "description": "Retrieve the encrypted memory stick before rival syndicates intercept.",
+        "missionType": "DeadDropCourier",
+        "latitude": 51.508,
+        "longitude": -0.1281,
+        "triggerRadiusM": 35,
+        "timeLimitS": 120,
+        "requiredStamina": 15,
+        "reward": {
+          "cash": 750,
+          "gems": 12,
+          "xp": 300,
+          "itemId": null
+        },
+        "minPlayerLevel": 1,
+        "cooldownS": 3600
+      },
+      "profile": {
+        "level": 1,
+        "xp": 0,
+        "xpToNextLevel": 1000,
+        "totalXp": 0,
+        "cash": 5500,
+        "gems": 50,
+        "stamina": {
+          "current": 85,
+          "max": 100,
+          "regenSeconds": 180,
+          "nextPointAt": "2026-09-20T04:30:25.338Z",
+          "fullAt": "2026-09-20T05:12:25.338Z"
+        },
+        "equippedVehicleId": "veh_starter_drifter",
+        "equippedOutfitId": "outfit_street_jacket",
+        "hasFoundersPass": false
+      }
+    }
+  },
+  "GET /missions/attempts/active": {
+    "status": 200,
+    "body": {
+      "attempt": {
+        "id": "21598339-7d5d-496d-8f0b-116a3a37d2d0",
+        "missionId": "f21d5fd4-c945-4e26-b645-00a2ed74e7aa",
+        "status": "active",
+        "staminaCharged": 15,
+        "startedAt": "2026-09-20T04:27:25.338Z",
+        "expiresAt": "2026-09-20T04:29:55.338Z",
+        "finishedAt": null,
+        "reward": {
+          "cash": 750,
+          "gems": 12,
+          "xp": 300,
+          "itemId": null
+        },
+        "retryOf": null,
+        "retryCount": 0,
+        "canRetryFree": false,
+        "result": null
+      }
+    }
+  },
+  "POST /missions/attempts/{id}/complete": {
+    "status": 200,
+    "body": {
+      "attempt": {
+        "id": "21598339-7d5d-496d-8f0b-116a3a37d2d0",
+        "missionId": "f21d5fd4-c945-4e26-b645-00a2ed74e7aa",
+        "status": "completed",
+        "staminaCharged": 15,
+        "startedAt": "2026-09-20T04:27:25.338Z",
+        "expiresAt": "2026-09-20T04:29:55.338Z",
+        "finishedAt": "2026-09-20T04:27:25.361Z",
+        "reward": {
+          "cash": 750,
+          "gems": 12,
+          "xp": 300,
+          "itemId": null
+        },
+        "retryOf": null,
+        "retryCount": 0,
+        "canRetryFree": false,
+        "result": {
+          "reward": {
+            "xp": 300,
+            "cash": 750,
+            "gems": 12,
+            "itemId": null,
+            "itemGranted": false
+          },
+          "levelsGained": 0,
+          "serverElapsedS": 0
+        }
+      },
+      "alreadyCompleted": false,
+      "profile": {
+        "level": 1,
+        "xp": 300,
+        "xpToNextLevel": 1000,
+        "totalXp": 300,
+        "cash": 6250,
+        "gems": 62,
+        "stamina": {
+          "current": 85,
+          "max": 100,
+          "regenSeconds": 180,
+          "nextPointAt": "2026-09-20T04:30:25.338Z",
+          "fullAt": "2026-09-20T05:12:25.338Z"
+        },
+        "equippedVehicleId": "veh_starter_drifter",
+        "equippedOutfitId": "outfit_street_jacket",
+        "hasFoundersPass": false
+      }
+    }
+  },
+  "POST /missions/attempts/{id}/fail": {
+    "status": 200,
+    "body": {
+      "attempt": {
+        "id": "09da4857-9661-45e0-9454-c77f72703128",
+        "missionId": "0029d612-8c0e-4966-b08e-505aaad264b5",
+        "status": "failed",
+        "staminaCharged": 20,
+        "startedAt": "2026-09-20T04:27:25.383Z",
+        "expiresAt": "2026-09-20T04:29:55.383Z",
+        "finishedAt": "2026-09-20T04:27:25.398Z",
+        "reward": {
+          "cash": 1200,
+          "gems": 15,
+          "xp": 500,
+          "itemId": null
+        },
+        "retryOf": null,
+        "retryCount": 0,
+        "canRetryFree": true,
+        "result": null
+      },
+      "profile": {
+        "level": 1,
+        "xp": 300,
+        "xpToNextLevel": 1000,
+        "totalXp": 300,
+        "cash": 6250,
+        "gems": 62,
+        "stamina": {
+          "current": 65,
+          "max": 100,
+          "regenSeconds": 180,
+          "nextPointAt": "2026-09-20T04:30:25.338Z",
+          "fullAt": "2026-09-20T06:12:25.338Z"
+        },
+        "equippedVehicleId": "veh_starter_drifter",
+        "equippedOutfitId": "outfit_street_jacket",
+        "hasFoundersPass": false
+      }
+    }
+  },
+  "POST /missions/attempts/{id}/retry": {
+    "status": 201,
+    "body": {
+      "attempt": {
+        "id": "6fc4f983-d3f2-4e69-91f7-9accad546504",
+        "missionId": "0029d612-8c0e-4966-b08e-505aaad264b5",
+        "status": "active",
+        "staminaCharged": 0,
+        "startedAt": "2026-09-20T04:27:25.408Z",
+        "expiresAt": "2026-09-20T04:29:55.408Z",
+        "finishedAt": null,
+        "reward": {
+          "cash": 1200,
+          "gems": 15,
+          "xp": 500,
+          "itemId": null
+        },
+        "retryOf": "09da4857-9661-45e0-9454-c77f72703128",
+        "retryCount": 1,
+        "canRetryFree": false,
+        "result": null
+      },
+      "mission": {
+        "id": "0029d612-8c0e-4966-b08e-505aaad264b5",
+        "title": "Piccadilly Cyber Skirmish",
+        "description": "Neutralize 3 rogue combat drones in AR space.",
+        "missionType": "TurfSkirmishAR",
+        "latitude": 51.51,
+        "longitude": -0.1345,
+        "triggerRadiusM": 30,
+        "timeLimitS": 120,
+        "requiredStamina": 20,
+        "reward": {
+          "cash": 1200,
+          "gems": 15,
+          "xp": 500,
+          "itemId": null
+        },
+        "minPlayerLevel": 1,
+        "cooldownS": 3600
+      },
+      "profile": {
+        "level": 1,
+        "xp": 300,
+        "xpToNextLevel": 1000,
+        "totalXp": 300,
+        "cash": 6250,
+        "gems": 62,
+        "stamina": {
+          "current": 65,
+          "max": 100,
+          "regenSeconds": 180,
+          "nextPointAt": "2026-09-20T04:30:25.338Z",
+          "fullAt": "2026-09-20T06:12:25.338Z"
+        },
+        "equippedVehicleId": "veh_starter_drifter",
+        "equippedOutfitId": "outfit_street_jacket",
+        "hasFoundersPass": false
+      }
+    }
+  },
+  "POST /missions/attempts/{id}/abandon": {
+    "status": 200,
+    "body": {
+      "attempt": {
+        "id": "6fc4f983-d3f2-4e69-91f7-9accad546504",
+        "missionId": "0029d612-8c0e-4966-b08e-505aaad264b5",
+        "status": "abandoned",
+        "staminaCharged": 0,
+        "startedAt": "2026-09-20T04:27:25.408Z",
+        "expiresAt": "2026-09-20T04:29:55.408Z",
+        "finishedAt": "2026-09-20T04:27:25.423Z",
+        "reward": {
+          "cash": 1200,
+          "gems": 15,
+          "xp": 500,
+          "itemId": null
+        },
+        "retryOf": "09da4857-9661-45e0-9454-c77f72703128",
+        "retryCount": 1,
+        "canRetryFree": false,
+        "result": null
+      },
+      "profile": {
+        "level": 1,
+        "xp": 300,
+        "xpToNextLevel": 1000,
+        "totalXp": 300,
+        "cash": 6250,
+        "gems": 62,
+        "stamina": {
+          "current": 65,
+          "max": 100,
+          "regenSeconds": 180,
+          "nextPointAt": "2026-09-20T04:30:25.338Z",
+          "fullAt": "2026-09-20T06:12:25.338Z"
+        },
+        "equippedVehicleId": "veh_starter_drifter",
+        "equippedOutfitId": "outfit_street_jacket",
+        "hasFoundersPass": false
+      }
+    }
+  },
+  "GET /missions/history": {
+    "status": 200,
+    "body": {
+      "attempts": [
+        {
+          "id": "6fc4f983-d3f2-4e69-91f7-9accad546504",
+          "missionId": "0029d612-8c0e-4966-b08e-505aaad264b5",
+          "status": "abandoned",
+          "staminaCharged": 0,
+          "startedAt": "2026-09-20T04:27:25.408Z",
+          "expiresAt": "2026-09-20T04:29:55.408Z",
+          "finishedAt": "2026-09-20T04:27:25.423Z",
+          "reward": {
+            "cash": 1200,
+            "gems": 15,
+            "xp": 500,
+            "itemId": null
+          },
+          "retryOf": "09da4857-9661-45e0-9454-c77f72703128",
+          "retryCount": 1,
+          "canRetryFree": false,
+          "result": null,
+          "missionTitle": "Piccadilly Cyber Skirmish",
+          "missionType": "TurfSkirmishAR"
+        },
+        {
+          "id": "09da4857-9661-45e0-9454-c77f72703128",
+          "missionId": "0029d612-8c0e-4966-b08e-505aaad264b5",
+          "status": "failed",
+          "staminaCharged": 20,
+          "startedAt": "2026-09-20T04:27:25.383Z",
+          "expiresAt": "2026-09-20T04:29:55.383Z",
+          "finishedAt": "2026-09-20T04:27:25.398Z",
+          "reward": {
+            "cash": 1200,
+            "gems": 15,
+            "xp": 500,
+            "itemId": null
+          },
+          "retryOf": null,
+          "retryCount": 0,
+          "canRetryFree": true,
+          "result": null,
+          "missionTitle": "Piccadilly Cyber Skirmish",
+          "missionType": "TurfSkirmishAR"
+        },
+        {
+          "id": "21598339-7d5d-496d-8f0b-116a3a37d2d0",
+          "missionId": "f21d5fd4-c945-4e26-b645-00a2ed74e7aa",
+          "status": "completed",
+          "staminaCharged": 15,
+          "startedAt": "2026-09-20T04:27:25.338Z",
+          "expiresAt": "2026-09-20T04:29:55.338Z",
+          "finishedAt": "2026-09-20T04:27:25.361Z",
+          "reward": {
+            "cash": 750,
+            "gems": 12,
+            "xp": 300,
+            "itemId": null
+          },
+          "retryOf": null,
+          "retryCount": 0,
+          "canRetryFree": false,
+          "result": {
+            "reward": {
+              "xp": 300,
+              "cash": 750,
+              "gems": 12,
+              "itemId": null,
+              "itemGranted": false
+            },
+            "levelsGained": 0,
+            "serverElapsedS": 0
+          },
+          "missionTitle": "Trafalgar Square Drop",
+          "missionType": "DeadDropCourier"
+        }
+      ]
+    }
+  },
+  "GET /garage": {
+    "status": 200,
+    "body": {
+      "vehicles": [
+        {
+          "vehicleId": "veh_starter_drifter",
+          "name": "Starter Drifter",
+          "isEquipped": true,
+          "upgrades": {
+            "speed": 0,
+            "acceleration": 0,
+            "handling": 0
+          },
+          "maxUpgradeLevel": 5,
+          "nextUpgradeCostCash": {
+            "speed": 500,
+            "acceleration": 500,
+            "handling": 500
+          },
+          "customization": {
+            "hasCustomPaint": false,
+            "paintColor": {
+              "a": 1,
+              "b": 1,
+              "g": 1,
+              "r": 0
+            },
+            "hasCustomUnderglow": false,
+            "underglowEnabled": true,
+            "underglowColor": {
+              "a": 1,
+              "b": 1,
+              "g": 1,
+              "r": 0
+            }
+          },
+          "acquiredAt": "2026-09-20T04:27:25.079Z"
+        }
+      ]
+    }
+  },
+  "POST /garage/{id}/purchase": {
+    "status": 201,
+    "body": {
+      "vehicle": {
+        "vehicleId": "veh_night_interceptor",
+        "name": "Night Interceptor",
+        "isEquipped": false,
+        "upgrades": {
+          "speed": 0,
+          "acceleration": 0,
+          "handling": 0
+        },
+        "maxUpgradeLevel": 5,
+        "nextUpgradeCostCash": {
+          "speed": 750,
+          "acceleration": 750,
+          "handling": 750
+        },
+        "customization": {
+          "hasCustomPaint": false,
+          "paintColor": {
+            "a": 1,
+            "b": 1,
+            "g": 1,
+            "r": 0
+          },
+          "hasCustomUnderglow": false,
+          "underglowEnabled": true,
+          "underglowColor": {
+            "a": 1,
+            "b": 1,
+            "g": 1,
+            "r": 0
+          }
+        },
+        "acquiredAt": "2026-09-20T04:27:25.444Z"
+      },
+      "profile": {
+        "level": 1,
+        "xp": 300,
+        "xpToNextLevel": 1000,
+        "totalXp": 300,
+        "cash": 2250,
+        "gems": 62,
+        "stamina": {
+          "current": 65,
+          "max": 100,
+          "regenSeconds": 180,
+          "nextPointAt": "2026-09-20T04:30:25.338Z",
+          "fullAt": "2026-09-20T06:12:25.338Z"
+        },
+        "equippedVehicleId": "veh_starter_drifter",
+        "equippedOutfitId": "outfit_street_jacket",
+        "hasFoundersPass": false
+      }
+    }
+  },
+  "POST /garage/{id}/equip": {
+    "status": 200,
+    "body": {
+      "vehicle": {
+        "vehicleId": "veh_night_interceptor",
+        "name": "Night Interceptor",
+        "isEquipped": true,
+        "upgrades": {
+          "speed": 0,
+          "acceleration": 0,
+          "handling": 0
+        },
+        "maxUpgradeLevel": 5,
+        "nextUpgradeCostCash": {
+          "speed": 750,
+          "acceleration": 750,
+          "handling": 750
+        },
+        "customization": {
+          "hasCustomPaint": false,
+          "paintColor": {
+            "a": 1,
+            "b": 1,
+            "g": 1,
+            "r": 0
+          },
+          "hasCustomUnderglow": false,
+          "underglowEnabled": true,
+          "underglowColor": {
+            "a": 1,
+            "b": 1,
+            "g": 1,
+            "r": 0
+          }
+        },
+        "acquiredAt": "2026-09-20T04:27:25.444Z"
+      },
+      "profile": {
+        "level": 1,
+        "xp": 300,
+        "xpToNextLevel": 1000,
+        "totalXp": 300,
+        "cash": 2250,
+        "gems": 62,
+        "stamina": {
+          "current": 65,
+          "max": 100,
+          "regenSeconds": 180,
+          "nextPointAt": "2026-09-20T04:30:25.338Z",
+          "fullAt": "2026-09-20T06:12:25.338Z"
+        },
+        "equippedVehicleId": "veh_night_interceptor",
+        "equippedOutfitId": "outfit_street_jacket",
+        "hasFoundersPass": false
+      }
+    }
+  },
+  "POST /garage/{id}/upgrade": {
+    "status": 200,
+    "body": {
+      "vehicle": {
+        "vehicleId": "veh_night_interceptor",
+        "name": "Night Interceptor",
+        "isEquipped": true,
+        "upgrades": {
+          "speed": 1,
+          "acceleration": 0,
+          "handling": 0
+        },
+        "maxUpgradeLevel": 5,
+        "nextUpgradeCostCash": {
+          "speed": 1500,
+          "acceleration": 750,
+          "handling": 750
+        },
+        "customization": {
+          "hasCustomPaint": false,
+          "paintColor": {
+            "a": 1,
+            "b": 1,
+            "g": 1,
+            "r": 0
+          },
+          "hasCustomUnderglow": false,
+          "underglowEnabled": true,
+          "underglowColor": {
+            "a": 1,
+            "b": 1,
+            "g": 1,
+            "r": 0
+          }
+        },
+        "acquiredAt": "2026-09-20T04:27:25.444Z"
+      },
+      "profile": {
+        "level": 1,
+        "xp": 300,
+        "xpToNextLevel": 1000,
+        "totalXp": 300,
+        "cash": 1500,
+        "gems": 62,
+        "stamina": {
+          "current": 65,
+          "max": 100,
+          "regenSeconds": 180,
+          "nextPointAt": "2026-09-20T04:30:25.338Z",
+          "fullAt": "2026-09-20T06:12:25.338Z"
+        },
+        "equippedVehicleId": "veh_night_interceptor",
+        "equippedOutfitId": "outfit_street_jacket",
+        "hasFoundersPass": false
+      }
+    }
+  },
+  "PATCH /garage/{id}/customization": {
+    "status": 200,
+    "body": {
+      "vehicle": {
+        "vehicleId": "veh_night_interceptor",
+        "name": "Night Interceptor",
+        "isEquipped": true,
+        "upgrades": {
+          "speed": 1,
+          "acceleration": 0,
+          "handling": 0
+        },
+        "maxUpgradeLevel": 5,
+        "nextUpgradeCostCash": {
+          "speed": 1500,
+          "acceleration": 750,
+          "handling": 750
+        },
+        "customization": {
+          "hasCustomPaint": true,
+          "paintColor": {
+            "a": 1,
+            "b": 0.5,
+            "g": 0,
+            "r": 1
+          },
+          "hasCustomUnderglow": false,
+          "underglowEnabled": true,
+          "underglowColor": {
+            "a": 1,
+            "b": 1,
+            "g": 1,
+            "r": 0
+          }
+        },
+        "acquiredAt": "2026-09-20T04:27:25.444Z"
+      },
+      "profile": {
+        "level": 1,
+        "xp": 300,
+        "xpToNextLevel": 1000,
+        "totalXp": 300,
+        "cash": 1500,
+        "gems": 62,
+        "stamina": {
+          "current": 65,
+          "max": 100,
+          "regenSeconds": 180,
+          "nextPointAt": "2026-09-20T04:30:25.338Z",
+          "fullAt": "2026-09-20T06:12:25.338Z"
+        },
+        "equippedVehicleId": "veh_night_interceptor",
+        "equippedOutfitId": "outfit_street_jacket",
+        "hasFoundersPass": false
+      }
+    }
+  },
+  "GET /shop/offers": {
+    "status": 200,
+    "body": {
+      "offers": [
+        {
+          "id": "offer_nitro_pack",
+          "title": "Nitro pack x3",
+          "item": {
+            "id": "consumable_nitro",
+            "name": "Nitro Canister",
+            "category": "Consumable",
+            "rarity": "Common"
+          },
+          "quantity": 3,
+          "priceCash": 300,
+          "priceGems": 0,
+          "maxPerUser": null,
+          "purchasedCount": 0,
+          "endsAt": null
+        }
+      ]
+    }
+  },
+  "POST /shop/offers/{id}/purchase": {
+    "status": 201,
+    "body": {
+      "purchase": {
+        "offerId": "offer_nitro_pack",
+        "itemId": "consumable_nitro",
+        "quantityGranted": 3
+      },
+      "profile": {
+        "level": 1,
+        "xp": 300,
+        "xpToNextLevel": 1000,
+        "totalXp": 300,
+        "cash": 1200,
+        "gems": 62,
+        "stamina": {
+          "current": 65,
+          "max": 100,
+          "regenSeconds": 180,
+          "nextPointAt": "2026-09-20T04:30:25.338Z",
+          "fullAt": "2026-09-20T06:12:25.338Z"
+        },
+        "equippedVehicleId": "veh_night_interceptor",
+        "equippedOutfitId": "outfit_street_jacket",
+        "hasFoundersPass": false
+      }
+    }
+  },
+  "GET /inventory": {
+    "status": 200,
+    "body": {
+      "items": [
+        {
+          "itemId": "consumable_nitro",
+          "name": "Nitro Canister",
+          "category": "Consumable",
+          "rarity": "Common",
+          "quantity": 3,
+          "sellValueCash": 50,
+          "isEquipped": false,
+          "acquiredAt": "2026-09-20T04:27:25.504Z"
+        },
+        {
+          "itemId": "outfit_street_jacket",
+          "name": "Street Jacket",
+          "category": "Outfit",
+          "rarity": "Common",
+          "quantity": 1,
+          "sellValueCash": 0,
+          "isEquipped": true,
+          "acquiredAt": "2026-09-20T04:27:25.079Z"
+        }
+      ]
+    }
+  },
+  "POST /inventory/{id}/equip": {
+    "status": 200,
+    "body": {
+      "item": {
+        "itemId": "outfit_street_jacket",
+        "name": "Street Jacket",
+        "category": "Outfit",
+        "rarity": "Common",
+        "quantity": 1,
+        "sellValueCash": 0,
+        "isEquipped": true,
+        "acquiredAt": "2026-09-20T04:27:25.079Z"
+      },
+      "profile": {
+        "level": 1,
+        "xp": 300,
+        "xpToNextLevel": 1000,
+        "totalXp": 300,
+        "cash": 1200,
+        "gems": 62,
+        "stamina": {
+          "current": 65,
+          "max": 100,
+          "regenSeconds": 180,
+          "nextPointAt": "2026-09-20T04:30:25.338Z",
+          "fullAt": "2026-09-20T06:12:25.338Z"
+        },
+        "equippedVehicleId": "veh_night_interceptor",
+        "equippedOutfitId": "outfit_street_jacket",
+        "hasFoundersPass": false
+      }
+    }
+  },
+  "POST /inventory/{id}/sell": {
+    "status": 200,
+    "body": {
+      "sale": {
+        "itemId": "consumable_nitro",
+        "quantitySold": 1,
+        "cashEarned": 50,
+        "remaining": 2
+      },
+      "profile": {
+        "level": 1,
+        "xp": 300,
+        "xpToNextLevel": 1000,
+        "totalXp": 300,
+        "cash": 1250,
+        "gems": 62,
+        "stamina": {
+          "current": 65,
+          "max": 100,
+          "regenSeconds": 180,
+          "nextPointAt": "2026-09-20T04:30:25.338Z",
+          "fullAt": "2026-09-20T06:12:25.338Z"
+        },
+        "equippedVehicleId": "veh_night_interceptor",
+        "equippedOutfitId": "outfit_street_jacket",
+        "hasFoundersPass": false
+      }
+    }
+  },
+  "POST /economy/ads/reward": {
+    "status": 200,
+    "body": {
+      "rewardType": "stamina",
+      "profile": {
+        "level": 1,
+        "xp": 300,
+        "xpToNextLevel": 1000,
+        "totalXp": 300,
+        "cash": 1250,
+        "gems": 62,
+        "stamina": {
+          "current": 95,
+          "max": 100,
+          "regenSeconds": 180,
+          "nextPointAt": "2026-09-20T04:30:25.338Z",
+          "fullAt": "2026-09-20T04:42:25.338Z"
+        },
+        "equippedVehicleId": "veh_night_interceptor",
+        "equippedOutfitId": "outfit_street_jacket",
+        "hasFoundersPass": false
+      }
+    }
+  },
+  "POST /economy/dev/founders-pass": {
+    "status": 200,
+    "body": {
+      "profile": {
+        "level": 1,
+        "xp": 300,
+        "xpToNextLevel": 1000,
+        "totalXp": 300,
+        "cash": 11250,
+        "gems": 562,
+        "stamina": {
+          "current": 95,
+          "max": 100,
+          "regenSeconds": 180,
+          "nextPointAt": "2026-09-20T04:30:25.338Z",
+          "fullAt": "2026-09-20T04:42:25.338Z"
+        },
+        "equippedVehicleId": "veh_night_interceptor",
+        "equippedOutfitId": "outfit_street_jacket",
+        "hasFoundersPass": true
+      }
+    }
+  },
+  "POST /economy/iap/verify": {
+    "status": 501,
+    "body": {
+      "error": {
+        "code": "NOT_IMPLEMENTED",
+        "message": "In-app purchase verification is not configured yet"
+      }
+    }
+  },
+  "GET /me/transactions": {
+    "status": 200,
+    "body": {
+      "transactions": [
+        {
+          "id": "091825b4-1c97-4ec4-a4ff-216a7bb830c2",
+          "reason": "iap_founders_pass",
+          "cashDelta": 10000,
+          "gemsDelta": 500,
+          "cashAfter": 11250,
+          "gemsAfter": 562,
+          "refType": "iap_purchase",
+          "refId": "530184c3-50ba-480d-a126-1e0d424421d5",
+          "metadata": {},
+          "createdAt": "2026-09-20T04:27:25.563Z"
+        },
+        {
+          "id": "f5fd8902-5048-489f-a6de-dcb4b30d7f8c",
+          "reason": "item_sale",
+          "cashDelta": 50,
+          "gemsDelta": 0,
+          "cashAfter": 1250,
+          "gemsAfter": 62,
+          "refType": "item",
+          "refId": "consumable_nitro",
+          "metadata": {
+            "quantity": 1,
+            "unitPrice": 50
+          },
+          "createdAt": "2026-09-20T04:27:25.534Z"
+        },
+        {
+          "id": "d5f8e56f-fcdb-45b5-88b0-d5d156fa8992",
+          "reason": "shop_purchase",
+          "cashDelta": -300,
+          "gemsDelta": 0,
+          "cashAfter": 1200,
+          "gemsAfter": 62,
+          "refType": "store_offer",
+          "refId": "offer_nitro_pack",
+          "metadata": {
+            "itemId": "consumable_nitro",
+            "quantity": 3
+          },
+          "createdAt": "2026-09-20T04:27:25.504Z"
+        },
+        {
+          "id": "50b9334f-b2e6-4f48-987f-fb9b5847fda5",
+          "reason": "vehicle_upgrade",
+          "cashDelta": -750,
+          "gemsDelta": 0,
+          "cashAfter": 1500,
+          "gemsAfter": 62,
+          "refType": "vehicle",
+          "refId": "veh_night_interceptor",
+          "metadata": {
+            "stat": "speed",
+            "toLevel": 1,
+            "fromLevel": 0
+          },
+          "createdAt": "2026-09-20T04:27:25.470Z"
+        },
+        {
+          "id": "ae5782fd-8247-4e42-9c71-6c94555970f2",
+          "reason": "vehicle_purchase",
+          "cashDelta": -4000,
+          "gemsDelta": 0,
+          "cashAfter": 2250,
+          "gemsAfter": 62,
+          "refType": "vehicle",
+          "refId": "veh_night_interceptor",
+          "metadata": {},
+          "createdAt": "2026-09-20T04:27:25.444Z"
+        }
+      ]
+    }
+  },
+  "POST /auth/refresh": {
+    "status": 200,
+    "body": {
+      "accessToken": "<access token — a signed JWT>",
+      "accessTokenExpiresIn": 900,
+      "refreshToken": "<refresh token — store it securely>",
+      "refreshTokenExpiresAt": "2026-12-19T04:27:25.587Z",
+      "user": {
+        "id": "0cf05b31-c2da-44ce-a536-6c39d64a69e9",
+        "email": null,
+        "displayName": "Neon Rider",
+        "isGuest": true,
+        "role": "player",
+        "createdAt": "2026-09-20T04:27:25.079Z"
+      },
+      "profile": {
+        "level": 1,
+        "xp": 300,
+        "xpToNextLevel": 1000,
+        "totalXp": 300,
+        "cash": 11250,
+        "gems": 562,
+        "stamina": {
+          "current": 95,
+          "max": 100,
+          "regenSeconds": 180,
+          "nextPointAt": "2026-09-20T04:30:25.338Z",
+          "fullAt": "2026-09-20T04:42:25.338Z"
+        },
+        "equippedVehicleId": "veh_night_interceptor",
+        "equippedOutfitId": "outfit_street_jacket",
+        "hasFoundersPass": true
+      }
+    }
+  },
+  "POST /auth/google": {
+    "status": 501,
+    "body": {
+      "error": {
+        "code": "NOT_IMPLEMENTED",
+        "message": "Google sign-in is not enabled yet"
+      }
+    }
+  },
+  "POST /auth/apple": {
+    "status": 501,
+    "body": {
+      "error": {
+        "code": "NOT_IMPLEMENTED",
+        "message": "Apple sign-in is not enabled yet"
+      }
+    }
+  },
+  "POST /auth/link/google": {
+    "status": 501,
+    "body": {
+      "error": {
+        "code": "NOT_IMPLEMENTED",
+        "message": "Google sign-in is not enabled yet"
+      }
+    }
+  },
+  "POST /auth/link/apple": {
+    "status": 501,
+    "body": {
+      "error": {
+        "code": "NOT_IMPLEMENTED",
+        "message": "Apple sign-in is not enabled yet"
+      }
+    }
+  },
+  "POST /auth/link/email": {
+    "status": 200,
+    "body": {
+      "user": {
+        "id": "10bedf12-765e-49bd-8cbe-01d706baa1c7",
+        "email": "player@example.com",
+        "displayName": "Player_DD16F5",
+        "isGuest": false,
+        "role": "player",
+        "createdAt": "2026-09-20T04:27:25.607Z"
+      }
+    }
+  },
+  "POST /auth/password/forgot": {
+    "status": 202,
+    "body": {
+      "message": "If that email has an account, a reset link has been sent."
+    }
+  },
+  "POST /auth/password/reset": {
+    "status": 204,
+    "body": {}
+  },
+  "POST /auth/password/change": {
+    "status": 200,
+    "body": {
+      "accessToken": "<access token — a signed JWT>",
+      "accessTokenExpiresIn": 900,
+      "refreshToken": "<refresh token — store it securely>",
+      "refreshTokenExpiresAt": "2026-12-19T04:27:25.699Z",
+      "user": {
+        "id": "11b19aa3-7bba-4f7d-b657-2fc6fc32522d",
+        "email": "changer@example.com",
+        "displayName": "Player_AB8C26",
+        "isGuest": false,
+        "role": "player",
+        "createdAt": "2026-09-20T04:27:25.665Z"
+      },
+      "profile": {
+        "level": 1,
+        "xp": 0,
+        "xpToNextLevel": 1000,
+        "totalXp": 0,
+        "cash": 5000,
+        "gems": 50,
+        "stamina": {
+          "current": 100,
+          "max": 100,
+          "regenSeconds": 180,
+          "nextPointAt": null,
+          "fullAt": null
+        },
+        "equippedVehicleId": "veh_starter_drifter",
+        "equippedOutfitId": "outfit_street_jacket",
+        "hasFoundersPass": false
+      }
+    }
+  },
+  "POST /auth/logout": {
+    "status": 204,
+    "body": {}
+  },
+  "POST /auth/logout-all": {
+    "status": 204,
+    "body": {}
+  },
+  "POST /me/delete": {
+    "status": 204,
+    "body": {}
+  }
+}

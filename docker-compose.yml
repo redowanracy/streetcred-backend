@@ -1,0 +1,23 @@
+name: streetcred
+
+services:
+  postgres:
+    image: postgis/postgis:16-3.4
+    container_name: streetcred-postgres
+    environment:
+      POSTGRES_USER: streetcred
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?Set DB_PASSWORD in .env before starting Postgres}
+      POSTGRES_DB: streetcred
+    ports:
+      - "127.0.0.1:5442:5432"
+    volumes:
+      - streetcred_pg:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U streetcred -d streetcred"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    restart: unless-stopped
+
+volumes:
+  streetcred_pg:
